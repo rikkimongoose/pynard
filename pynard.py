@@ -1,5 +1,6 @@
 #imports
 import copy
+import random
 
 #constants
 BG_FIELD_SIZE = 24
@@ -95,6 +96,9 @@ class RulesController:
     def __init__(self, playboard_controller_item):
         self._playboard_controller = playboard_controller_item
 
+    def _init_move(self, playboard, player, pos, step):
+        return Move(deepcopy(playboard), player, pos, step)
+
     def set_start(self):
         new_board = Playboard()
         _playboard_controller.set_start(new_board)
@@ -117,16 +121,30 @@ class RulesController:
 
     def do_move(self, playboard, player, pos, step):
         play_table_status = get_game_status(playboard, player)
-
         if play_table_status == GAMESTATUS_START and can_move_start(playboard, player, pos, step):
             return do_move_start(playboard, player, pos, step)
         if play_table_status == GAMESTATUS_MIDDLE and can_move_middle(playboard, player, pos, step):
             return do_move_middle(playboard, player, pos, step)
-        elif play_table_status == GAMESTATUS_END and can_move_end(playboard, player, 0, step):
+        elif play_table_status == GAMESTATUS_END and can_move_end(playboard, player, pos, step):
             return do_move_end(playboard, player, pos, step)
+        return None
+
+    def can_move(self, playboard, player, pos, step):
+        play_table_status = get_game_status(playboard, player)
+        if play_table_status == GAMESTATUS_START:
+            return can_move_start(playboard, player, pos, step)
+        if play_table_status == GAMESTATUS_MIDDLE:
+            return can_move_middle(playboard, player, pos, step)
+        elif play_table_status == GAMESTATUS_END:
+            return can_move_end(playboard, player, pos, step)
+        return False
 
     def can_move_start(self, playboard, player, pos, step):
         return pos == 0
+
+    def _is_this_player(self, player, pos):
+        field_player = _playboard_controller.get_player(playboard, player, pos)
+        return field_player == NO_PLAYER and field_player != player
 
     def _is_enemy_player(self, player, pos):
         field_player = _playboard_controller.get_player(playboard, player, pos)
@@ -136,10 +154,10 @@ class RulesController:
         return pos + step < BG_FIELD_SIZE
 
     def can_move_middle(self, playboard, player, pos, step):
-        return _is_before_border(pos, step) and not _is_enemy_player(pos + step)
+        return _is_this_player(player, pos) and _is_before_border(pos, step) and not _is_enemy_player(pos + step)
 
     def can_move_end(self, playboard, player, pos, step):
-        return not _is_enemy_player(pos + step)
+        return not  _is_this_player(player, pos) and _is_enemy_player(pos + step)
 
     def do_move_start(self, playboard, player, pos, step):
         return do_move_middle(playboard, player, pos, step)
@@ -158,8 +176,27 @@ class RulesController:
         _playboard_controller.player_stack_inc(move_item.playboard, player)
         return move_item
 
-    def _init_move(self, playboard, player, pos, step):
-        return Move(deepcopy(playboard), player, pos, step)
+    def dice_moves(self, dice):
+        if dice[0] == dice[1]:
+            return dice * 2
+        return dice
+
+class DiceController (object):
+    @staticmethod
+    def get_dice(self, numbers = 6):
+        return (random.randint(1, numbers), random.randint(1, numbers))
+
+    @staticmethod
+    def get_all_dices(self, numbers = 6):
+        i = 1
+        j = 1
+        dices = []
+        while i < numbers:
+            while j < numbers:
+                dices.add((i, j))
+                j+=1
+            i+=1
+        return dices
 
 class Move:
     def __init__(self, playboard_init, player_init, pos_init, step_init):
@@ -178,3 +215,6 @@ class Move:
     children = None
 
     estimation = 0.0
+
+    def __str__(self):
+        return "%s - %s [%s]" % (pos, step, estimation)
