@@ -7,6 +7,7 @@ import os
 
 #constants
 BG_FIELD_SIZE = 24
+BG_FIELD_SIZE_HALF = BG_FIELD_SIZE / 2
 BG_END_INDEX = BG_FIELD_SIZE - 1
 BG_USER_CHECKERS_COUNT = 15
 
@@ -44,7 +45,9 @@ class PlayboardController:
         if player == PLAYER1:
             return pos
         elif player == PLAYER2:
-            return BG_END_INDEX - pos
+            if pos < BG_FIELD_SIZE_HALF:
+                return pos + BG_FIELD_SIZE_HALF
+            return pos - BG_FIELD_SIZE_HALF
 
     def _get_raw(self, playboard, player, pos):
         pos = self._pos_by_player(player, pos)
@@ -101,7 +104,7 @@ class PlayboardController:
 
 class RulesController:
     start_exceptional = [ {6, 6}, {4, 4}, {3, 3} ]
-    init_position = [BG_USER_CHECKERS_COUNT] + [0] * (BG_END_INDEX - 1) + [-BG_USER_CHECKERS_COUNT]
+    init_position = [BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1) + [-BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1)
 
     def __init__(self, playboard_controller_item):
         self._playboard_controller = playboard_controller_item
