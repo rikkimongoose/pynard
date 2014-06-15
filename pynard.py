@@ -3,6 +3,7 @@ PYNARD_VER = "0.1"
 #imports
 import copy
 import random
+import os
 
 #constants
 BG_FIELD_SIZE = 24
@@ -47,7 +48,7 @@ class PlayboardController:
 
     def _get_raw(self, playboard, player, pos):
         pos = self._pos_by_player(player, pos)
-        return playboard.fields[pos]
+        return self.get_raw_by_pos(playboard, pos)
 
     def _get_by_player(self, playboard, player, pos):
         val = self._get_raw(playboard, player, pos)
@@ -60,6 +61,9 @@ class PlayboardController:
         board = Playboard()
         board.fields = data
         return board
+
+    def get_raw_by_pos(self, playboard, pos):
+        return playboard.fields[pos]
 
     def player_get_stack(self, playboard, player):
         if player == PLAYER1:
@@ -185,7 +189,7 @@ class RulesController:
         self._playboard_controller.player_stack_inc(playboard_new, player)
         return playboard_new
 
-class DiceController (object):
+class DiceController(object):
     @staticmethod
     def get_dice(self, numbers = 6):
         return (random.randint(1, numbers), random.randint(1, numbers))
@@ -210,16 +214,100 @@ class DiceController (object):
         else:
             return 2/36
 
+class GameController:
+    def __init__(self, rules_controller_item):
+        self._rules_controller = rules_controller_item
+        self._playboard_controller = self._rules_controller._playboard_controller
+        self.all_dices = DiceController.get_all_dices()
+
+    def get_all_moves(self, player, playboard, dices):
+        pos = 0
+        marbles = 0
+        moves = []
+        move.player = player
+        marbles_limit = BG_USER_CHECKERS_COUNT - self._playboard_controller.player_get_stack(player, playboard)
+        dice = dices[0]
+        while marbles < marbles_limit and pos < BG_FIELD_SIZE:
+            val = self._playboard_controller.get(player, playboard, pos)
+            if val > 0:
+                marbles += val
+                new_board = self._rules_controller.do_move(player, playboard, pos, dice)
+                if new_board is not None:
+                    move = Move()
+                    move.player = player
+                    move.playboard = new_board
+                    move.moves.add((pos, dice))
+                    moves.add(move)
+            pos += 1
+        new_moves = []
+        while dice_pos in range(1, len(dices)):
+            dice = dices[dice_pos]
+            for move in moves:
+                pos = 0
+                marbles = 0
+                while marbles < marbles_limit and pos < BG_FIELD_SIZE:
+                    val = self._playboard_controller.get(player, move.playboard, pos)
+                    if val > 0:
+                        marbles += val
+                        new_board = self._rules_controller.do_move(player, move.playboard, pos, dice)
+                        if new_board is not None:
+                            new_move = Move()
+                            new_move.player = player
+                            new_move.playboard = new_board
+                            new_move.moves += move.moves
+                            new_move.moves.add((pos, dice))
+                            new_moves.add(move)
+                    pos += 1
+            if not len(new_moves):
+                break
+            moves = new_moves
+        for move in moves:
+            move.probability = DiceController.dice_probability(dices)
+        return moves
+
+    def load_all_child_moves(self, move, is_recursive = False):
+        dices = get_all_dices
+        for dice in dices:
+            move.children += self.get_all_moves(get_next_player(move.player), move.playboard, dice)
+
+        #remove playboard to free memory
+        move.playboard = None
+
+        for child in move.children:
+            child.parent = move
+            if self._rules_controller.is_win(child.board, child.player):
+                child.winner = child.player
+                child.playboard = None
+                continue
+            if is_recursive:
+                self.load_all_child_moves(child, True)
+
+    def get_next_player(self, player):
+        if player == PLAYER1:
+            return PLAYER2
+        elif player == PLAYER2:
+            return PLAYER1
+        return NO_PLAYER
+
+    def load_moves_tree(self, player, playboard):
+        base_move = Move()
+        base_move.player = NO_PLAYER
+        base_move.playboard = playboard
+
+        children = []
+
 class MoveNetItem:
     moves = []
     player = NO_PLAYER
     playboard = None
 
     parent = None
-    children = None
+    children = []
 
     estimation = 0.0
     probability = 0.0
+
+    winner = NO_PLAYER
 
     def __str__(self):
         return "est: %f, prob: %f: " % (estimation, probability) + ','.join([PlayboardVisualiser.show_move(move) for move in moves])

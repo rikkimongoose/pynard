@@ -30,6 +30,13 @@ class PlayboardControllerInput(unittest.TestCase):
         self.assertEqual(playboard_controller.player_get_stack(playboard, PLAYER2), 1)
         self.assertEqual(playboard_controller.player_get_stack(playboard, PLAYER1), 0)
 
+    def testget_raw_by_pos(self):
+        playboard_controller = self.init()
+        playboard = playboard_controller.init_start([1] + [0] * BG_END_INDEX-2 + [-1])
+        self.assertEqual(playboard_controller.get_raw_by_pos(playboard, 0), 1)
+        self.assertEqual(playboard_controller.get_raw_by_pos(playboard, BG_END_INDEX), -1)
+
+
     def testplayer_stack_inc(self):
         playboard_controller = self.init()
         playboard = Playboard()
