@@ -285,6 +285,9 @@ class GameController:
             if is_recursive:
                 self.load_all_child_moves(child, True)
 
+    def get_first_player(self):
+        return PLAYER1
+
     def get_next_player(self, player):
         if player == PLAYER1:
             return PLAYER2
