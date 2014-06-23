@@ -129,15 +129,6 @@ class RulesControllerInput(unittest.TestCase):
         self.assertEqual(control.get_game_status(playboard, PLAYER1), GAMESTATUS_END)
         playboard_controller.player_stack_inc(playboard, PLAYER2)
         self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
-        #test end 3
-        playboard = control.set_start()
-        playboard.fields[0] = -1
-        playboard.fields[1] = -14
-        playboard.fields[12] = 0
-        playboard.fields[22] = 14
-        playboard.fields[23] = 1
-        #self.assertEqual(control.get_game_status(playboard, PLAYER1), GAMESTATUS_END)
-        #self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
 
     def testcan_move(self):
         control = self.init()
