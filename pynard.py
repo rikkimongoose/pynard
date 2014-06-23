@@ -101,19 +101,24 @@ class PlayboardController:
             return PLAYER2
         # if val == 0:
         return NO_PLAYER
-
 class RulesController:
     start_exceptional = [ {6, 6}, {4, 4}, {3, 3} ]
-    init_position = [BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1) + [-BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1)
+    _init_position = [BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1) + [-BG_USER_CHECKERS_COUNT] + [0] * (BG_FIELD_SIZE_HALF - 1)
 
     def __init__(self, playboard_controller_item):
         self._playboard_controller = playboard_controller_item
 
-    def _init_playboard(self, playboard):
-        return copy.deepcopy(playboard)
+    PLAYER_START_HOUSE = range(0, 6)
+    PLAYER_END_HOUSE = range(18, 24)
 
-    def set_start(self):
-        return self._playboard_controller.init_start(copy.deepcopy(self.init_position))
+    @classmethod
+    def init_playboard(self, playboard = None):
+        if playboard is not None:
+            return copy.deepcopy(playboard)
+        return copy.deepcopy(self._init_position)
+
+    def set_start(self, init_position = None):
+        return self._playboard_controller.init_start(self.init_playboard(init_position))
 
     def is_win(self, playboard, player):
         if self._playboard_controller.player_get_stack(playboard, player) >= BG_USER_CHECKERS_COUNT:
@@ -127,12 +132,12 @@ class RulesController:
         if _play_table_controller_get(playboard, player, 0) == BG_USER_CHECKERS_COUNT:
             return GAMESTATUS_START
         checkers_count = 0
-        for iterator in range(BG_END_HOUSE_START, BG_FIELD_SIZE):
+        for iterator in self.PLAYER_END_HOUSE:
             val = _play_table_controller_get(playboard, player, iterator)
-            if val > 0: checkers_count += val
-            if checkers_count == BG_USER_CHECKERS_COUNT: break
-        if checkers_count == BG_USER_CHECKERS_COUNT:
-            return GAMESTATUS_END
+            if val > 0:
+                checkers_count += val
+            if checkers_count == BG_USER_CHECKERS_COUNT:
+                return GAMESTATUS_END
         return GAMESTATUS_MIDDLE
 
     def can_move(self, playboard, player, pos, step):
@@ -179,7 +184,7 @@ class RulesController:
         return self.do_move_middle(playboard, player, pos, step)
 
     def do_move_middle(self, playboard, player, pos, step):
-        playboard_new = self._init_playboard(playboard)
+        playboard_new = self.init_playboard(playboard)
         self._playboard_controller.move_from(playboard_new, player, pos)
         self._playboard_controller.move_to(playboard_new, player, pos + step)
         return playboard_new
@@ -187,7 +192,7 @@ class RulesController:
     def do_move_end(self, playboard, player, pos, step):
         if self._is_before_border(pos, step):
             return self.do_move_middle(playboard, player, pos, step)
-        playboard_new = self._init_playboard(playboard)
+        playboard_new = self.init_playboard(playboard)
         self._playboard_controller.move_from(playboard_new, player, pos)
         self._playboard_controller.player_stack_inc(playboard_new, player)
         return playboard_new
@@ -202,12 +207,10 @@ class DiceController(object):
         i = 1
         j = 1
         dices = []
-        while i < numbers:
+        for i in range(numbers):
             dices.add({i, i, i, i})
-            while j < i:
+            for j in range(i):
                 dices.add({i, j})
-                j+=1
-            i+=1
         return dices
 
     @staticmethod

@@ -34,7 +34,7 @@ class PlayboardControllerInput(unittest.TestCase):
         playboard_controller = self.init()
         playboard = playboard_controller.init_start([1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  -1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0])
         self.assertEqual(playboard_controller.get_raw_by_pos(playboard, 0), 1)
-        self.assertEqual(playboard_controller.get_raw_by_pos(playboard, 13), -1)
+        self.assertEqual(playboard_controller.get_raw_by_pos(playboard, 12), -1)
 
 
     def testplayer_stack_inc(self):
@@ -47,7 +47,7 @@ class PlayboardControllerInput(unittest.TestCase):
 
     def testget(self):
         playboard_controller = self.init()
-        playboard = playboard_controller.init_start([1] + [0] * (BG_END_INDEX - 1) + [-1])
+        playboard = playboard_controller.init_start([1] + [0] * (BG_FIELD_SIZE_HALF - 1) + [-1] + [0] * (BG_FIELD_SIZE_HALF - 1))
         self.assertEqual(playboard_controller.get(playboard, PLAYER1, 0), 1)
         self.assertEqual(playboard_controller.get(playboard, PLAYER2, 0), 1)
         self.assertEqual(playboard_controller.get(playboard, PLAYER1, 1), 0)
@@ -55,7 +55,7 @@ class PlayboardControllerInput(unittest.TestCase):
 
     def testmove_to(self):
         playboard_controller = self.init()
-        playboard = playboard_controller.init_start([1] + [0] * (BG_END_INDEX - 1) + [-1])
+        playboard = playboard_controller.init_start([1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  -1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0])
         playboard_controller.move_to(playboard, PLAYER1, 1)
         self.assertEqual(playboard_controller.get(playboard, PLAYER1, 1), 1)
         playboard_controller.move_to(playboard, PLAYER2, 1)
@@ -63,19 +63,19 @@ class PlayboardControllerInput(unittest.TestCase):
 
     def testmove_from(self):
         playboard_controller = self.init()
-        playboard = playboard_controller.init_start([2] + [0] * (BG_END_INDEX - 1) + [-2])
+        playboard = playboard_controller.init_start(RulesController.init_playboard())
         playboard_controller.move_from(playboard, PLAYER1, 0)
-        self.assertEqual(playboard_controller.get(playboard, PLAYER1, 0), 1)
+        self.assertEqual(playboard_controller.get(playboard, PLAYER1, 0), 14)
         playboard_controller.move_from(playboard, PLAYER2, 0)
-        self.assertEqual(playboard_controller.get(playboard, PLAYER2, 0), 1)
+        self.assertEqual(playboard_controller.get(playboard, PLAYER2, 0), BG_USER_CHECKERS_COUNT - 1)
 
     def testget_player(self):
         playboard_controller = self.init()
-        playboard = playboard_controller.init_start([1] + [0] * (BG_FIELD_SIZE - 2) + [-1])
+        playboard = playboard_controller.init_start([1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  -1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0])
         self.assertEqual(playboard_controller.get_player(playboard, PLAYER1, 0), PLAYER1)
-        self.assertEqual(playboard_controller.get_player(playboard, PLAYER1, BG_END_INDEX), PLAYER2)
+        self.assertEqual(playboard_controller.get_player(playboard, PLAYER1, 12), PLAYER2)
         self.assertEqual(playboard_controller.get_player(playboard, PLAYER2, 0), PLAYER2)
-        self.assertEqual(playboard_controller.get_player(playboard, PLAYER2, BG_END_INDEX), PLAYER1)
+        self.assertEqual(playboard_controller.get_player(playboard, PLAYER2, 12), PLAYER1)
         self.assertEqual(playboard_controller.get_player(playboard, PLAYER1, 1), NO_PLAYER)
         self.assertEqual(playboard_controller.get_player(playboard, PLAYER2, 1), NO_PLAYER)
 
@@ -90,10 +90,8 @@ class RulesControllerInput(unittest.TestCase):
     def testset_start(self):
         control = self.init()
         board = control.set_start()
-        i = 0
-        while i < len(RulesController.init_position):
-            self.assertEqual(board.fields[i], RulesController.init_position[i])
-            i += 1
+        for i in range(len(RulesController._init_position)):
+            self.assertEqual(board.fields[i], RulesController._init_position[i])
 
     def testis_win(self):
         control = self.init()
@@ -122,9 +120,7 @@ class RulesControllerInput(unittest.TestCase):
         self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_MIDDLE)
 
         #test end
-        playboard = control.set_start()
-        playboard.fields[0] = -playboard.fields[0]
-        playboard.fields[BG_END_INDEX] = -playboard.fields[BG_END_INDEX]
+        playboard = control.set_start([0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, -15,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 15])
         self.assertEqual(control.get_game_status(playboard, PLAYER1), GAMESTATUS_END)
         self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
         #test end 2
@@ -135,36 +131,29 @@ class RulesControllerInput(unittest.TestCase):
         self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
         #test end 3
         playboard = control.set_start()
-        playboard.fields[1] = -playboard.fields[0]
-        playboard.fields[BG_END_INDEX-1] = -playboard.fields[BG_END_INDEX]
-        playboard.fields[0] = 1
-        playboard.fields[BG_END_INDEX] = -1
-        self.assertEqual(control.get_game_status(playboard, PLAYER1), GAMESTATUS_END)
-        self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
+        playboard.fields[0] = -1
+        playboard.fields[1] = -14
+        playboard.fields[12] = 0
+        playboard.fields[22] = 14
+        playboard.fields[23] = 1
+        #self.assertEqual(control.get_game_status(playboard, PLAYER1), GAMESTATUS_END)
+        #self.assertEqual(control.get_game_status(playboard, PLAYER2), GAMESTATUS_END)
 
     def testcan_move(self):
         control = self.init()
         playboard_controller = self.init_PlayboardController()
         #test start
-        playboard = control.set_start()
+        playboard = control.set_start([1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0,  -1, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0])
         self.assertTrue(control.can_move(playboard, PLAYER1, 0, 1))
         self.assertTrue(control.can_move(playboard, PLAYER2, 0, 1))
-        playboard_controller.move_from(playboard, PLAYER1, 0)
-        playboard_controller.move_from(playboard, PLAYER2, 0)
-        playboard_controller.move_to(playboard, PLAYER1, BG_END_INDEX - 1)
-        playboard_controller.move_to(playboard, PLAYER2, BG_END_INDEX - 1)
-        self.assertFalse(control.can_move(playboard, PLAYER1, 0, 1))
-        self.assertFalse(control.can_move(playboard, PLAYER2, 0, 1))
         #test middle
         playboard = control.set_start()
         playboard_controller.move_from(playboard, PLAYER1, 0)
         playboard_controller.move_from(playboard, PLAYER2, 0)
         playboard_controller.move_to(playboard, PLAYER1, 1)
         playboard_controller.move_to(playboard, PLAYER2, 1)
-        playboard_controller.move_to(playboard, PLAYER1, BG_END_INDEX - 2)
-        playboard_controller.move_to(playboard, PLAYER2, BG_END_INDEX - 2)
-        self.assertFalse(control.can_move(playboard, PLAYER1, 1, 1))
-        self.assertFalse(control.can_move(playboard, PLAYER2, 1, 1))
+        self.assertTrue(control.can_move(playboard, PLAYER1, 1, 1))
+        self.assertTrue(control.can_move(playboard, PLAYER2, 1, 1))
         #test end
         playboard = control.set_start()
         playboard.fields[1] = -playboard.fields[0]
@@ -190,14 +179,10 @@ class RulesControllerInput(unittest.TestCase):
             self.assertEqual(playboard_controller.get(playboard, player, 2), 1)
         #end
         for player in (PLAYER1, PLAYER2):
-            playboard = control.set_start()
-            playboard.fields[1] = -playboard.fields[0]
-            playboard.fields[0] = 0
-            playboard.fields[BG_END_INDEX-1] = -playboard.fields[BG_END_INDEX]
-            playboard.fields[BG_END_INDEX] = 0
-            playboard = control.do_move(playboard, player, BG_END_INDEX-1, 1)
+            playboard = control.set_start([0, 0, 0, 0, 0, 0,  0, 0, 0, 0, -15, 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 15, 0])
+            playboard = control.do_move(playboard, player, 22, 1)
             self.assertEqual(playboard_controller.get(playboard, player, BG_END_INDEX), 1)
-            playboard = control.do_move(playboard, player, BG_END_INDEX-1, 2)
+            playboard = control.do_move(playboard, player, 22, 2)
             self.assertEqual(playboard_controller.player_get_stack(playboard, player), 1)
 
 if __name__ == "__main__":
